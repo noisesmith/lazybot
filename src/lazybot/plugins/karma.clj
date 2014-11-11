@@ -17,11 +17,21 @@
   (let [attrs (key-attrs nick server channel)]
     (update! :karma attrs (assoc attrs :karma karma))))
 
+(def lossy
+  #{"Float"
+    "float"
+    "Double"
+    "double"
+    "mongodb"
+    "mongo-db"})
+
 (defn- get-karma
   [nick server channel]
   (let [user-map (fetch-one :karma
                             :where (key-attrs nick server channel))]
-    (get user-map :karma 0)))
+    (if (contains? lossy nick)
+      (+ (get user-map :karma 0) (- (rand 0.01) 0.005))
+      (get user-map :karma 0))))
 
 (def limit (ref {}))
 
