@@ -3,7 +3,8 @@
             [lazybot.info :as info]
             [useful.fn :refer [decorate]]
             [useful.map :refer [keyed]]
-            [irclj.core :as ircb]))
+            [irclj.core :as ircb]
+            [irclj.events :as events]))
 
 (defn make-hook
   [actions]
@@ -17,7 +18,7 @@
   (let [refzors (ref {:modules {:internal {:hooks lazybot/initial-hooks}}
                       :config config
                       :pending-ops 0})]
-    [(into {}
+    [(into {:raw-log events/stdout-callback}
            (map
             (decorate
              #(fn dispatch-hooks [irc-map event]
@@ -38,13 +39,14 @@
   "Creates a new bot and connects it."
   [server]
   (let [bot-config (info/read-config)
-        port 6667
+        port (get-in bot-config [server :port] 6667)
         [name pass channels] ((juxt :bot-name :bot-password :channels)
                                    (bot-config server))
         [fnmap refzors] (base-maps bot-config)
         irc (ircb/connect server port name
                           :callbacks fnmap
                           :identify-after-secs 3)]
+    (ircb/identify irc pass)
     [irc refzors]))
 
 (defn init-bot
