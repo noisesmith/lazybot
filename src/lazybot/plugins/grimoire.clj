@@ -1,33 +1,26 @@
 (ns lazybot.plugins.grimoire
   (:require [grimoire.util :as util]
+            [grimoire.things :as t]
+            [grimoire.either :as e]
+            [grimoire.api :as api]
+            [grimoire.api.web.read]
             [lazybot.registry :refer [defplugin send-message]]))
 
-(def nss #{"clojure.core"
-           "clojure.core.protocols"
-           "clojure.core.reducers"
-           "clojure.data"
-           "clojure.edn"
-           "clojure.inspector"
-           "clojure.instant"
-           "clojure.java.browse"
-           "clojure.java.io"
-           "clojure.java.javadoc"
-           "clojure.java.shell"
-           "clojure.main"
-           "clojure.pprint"
-           "clojure.reflect"
-           "clojure.repl"
-           "clojure.set"
-           "clojure.stacktrace"
-           "clojure.string"
-           "clojure.template"
-           "clojure.test"
-           "clojure.test.junit"
-           "clojure.test.tap"
-           "clojure.uuid"
-           "clojure.walk"
-           "clojure.xml"
-           "clojure.zip"})
+(def config
+  {:datastore
+   {:mode :web
+    :host "http://conj.io"}})
+
+(def nss
+  (let [artifact (-> (t/->Group "org.clojure")
+                     (t/->Artifact "clojure"))
+        newest   (first (e/result (api/list-versions config artifact)))
+        platform (t/->Platform newest "clj")]
+    (->> platform
+         (api/list-namespaces config)
+         e/result
+         (map t/thing->name)
+         (into #{}))))
 
 (defplugin
   (:cmd
@@ -39,5 +32,5 @@
        (when (nss ns)
          (send-message
           com-m
-          (format "http://grimoire.arrdem.com/1.6.0/%s/%s"
+          (format "http://conj.io/store/v0/org.clojure/clojure/latest/clj/%s/%s"
                   ns (util/munge s))))))))
