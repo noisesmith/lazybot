@@ -50,4 +50,4 @@
                            (count @def-index)))
                (catch Exception e
                  (str "Reload failed!" (.getMessage e))))
-          (send message com-m)))))
+          (send-message com-m)))))
