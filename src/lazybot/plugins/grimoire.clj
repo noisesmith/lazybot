@@ -34,8 +34,8 @@
      (let [sym                   (first args)
            [sym key platform ns s] (re-matches #"((.+)::(.+))/(.+)" sym)]
        (->> (if (and platform ns s)
-              (if-let [ns (get @def-index sym)]
-                (str "⇒ " (web/make-html-url -config (t/->Def ns sym)))
+              (if-let [def (get @def-index sym)]
+                (str "⇒ " (web/make-html-url -config def))
                 (str "Failed to find " sym))
               (str "Identify a def with <platform>::<namespace>/<name>"))
             (send-message com-m)))))
