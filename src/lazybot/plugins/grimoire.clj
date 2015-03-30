@@ -32,9 +32,9 @@
    #{"grim"}
    (fn [{:keys [args] :as com-m}]
      (let [sym                   (first args)
-           [_ platform ns key s] (re-matches #"((.+)::(.+))/(.+)" sym)]
+           [sym key platform ns s] (re-matches #"((.+)::(.+))/(.+)" sym)]
        (->> (if (and platform ns s)
-              (if-let [ns (get @def-index key)]
+              (if-let [ns (get @def-index sym)]
                 (str "⇒ " (web/make-html-url -config (t/->Def ns sym)))
                 (str "Failed to find " sym))
               (str "Identify a def with <platform>::<namespace>/<name>"))
