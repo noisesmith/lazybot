@@ -3,24 +3,28 @@
             [grimoire.things :as t]
             [grimoire.either :as e]
             [grimoire.api :as api]
+            [grimoire.api.web :as web]
             [grimoire.api.web.read]
             [lazybot.registry :refer [defplugin send-message]]))
 
-(def config
-  {:datastore
-   {:mode :web
-    :host "http://conj.io"}})
+(def -config
+  (web/->Config "http://conj.io"))
 
-(def nss
-  (let [artifact (-> (t/->Group "org.clojure")
-                     (t/->Artifact "clojure"))
-        newest   (first (e/result (api/list-versions config artifact)))
-        platform (t/->Platform newest "clj")]
-    (->> platform
-         (api/list-namespaces config)
-         e/result
-         (map t/thing->name)
-         (into #{}))))
+(def def-index
+  (atom {}))
+
+(defn set-def-index! []
+  (let [group (t/->Group "org.clojure")]
+    (->> (for [artifact     (e/result (api/list-artifacts -config group))
+               :let [newest (first (e/result (api/list-versions -config artifact)))]
+               platform     (e/result (api/list-platforms -config newest))
+               ns           (e/result (api/list-namespaces -config platform))
+               def          (e/result (api/list-defs -config ns))]
+           [(str (t/thing->name platform) "::" (t/thing->name ns) "/" (t/thing->name def)) def])
+         (into {})
+         (reset! def-index))))
+
+(set-ns-index!)
 
 (defplugin
   (:cmd
@@ -28,9 +32,22 @@
    #{"grim"}
    (fn [{:keys [args] :as com-m}]
      (let [sym      (first args)
-           [_ ns s] (re-matches #"(.*?)/(.*)" sym)]
-       (when (nss ns)
-         (send-message
-          com-m
-          (format "http://conj.io/store/v0/org.clojure/clojure/latest/clj/%s/%s"
-                  ns (util/munge s))))))))
+           [_ platform ns key s] (re-matches #"((.+)::(.+))/(.+)" sym)])
+     (->> (if (and platform ns s)
+            (if-let [ns (get @def-index key)]
+              (str "⇒ " (web/make-html-url -config (t/->Def ns sym)))
+              (str "Failed to find " sym))
+            (str "Identify a def with <platform>::<namespace>/<name>"))
+          (send-message com-m))))
+
+  ;; FIXME: this should probably be ratelimited
+  (:cmd
+   "Reload the Grimoire ns index"
+   #{"reload-grim"}
+   (fn [com-m]
+     (->> (try (do (set-ns-index!)
+                   (format "Reload succeeded!, %d defs indexed."
+                           (count @def-index)))
+               (catch Exception e
+                 (str "Reload failed!" (.getMessage e))))
+          (send message com-m)))))
