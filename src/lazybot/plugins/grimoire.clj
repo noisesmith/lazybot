@@ -24,7 +24,7 @@
          (into {})
          (reset! def-index))))
 
-(set-ns-index!)
+(set-def-index!)
 
 (defplugin
   (:cmd
