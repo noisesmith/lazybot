@@ -45,7 +45,7 @@
    "Reload the Grimoire ns index"
    #{"reload-grim"}
    (fn [com-m]
-     (->> (try (do (set-ns-index!)
+     (->> (try (do (set-def-index!)
                    (format "Reload succeeded!, %d defs indexed."
                            (count @def-index)))
                (catch Exception e
