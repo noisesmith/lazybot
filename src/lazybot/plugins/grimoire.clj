@@ -31,7 +31,7 @@
    "Print the Grimoire URL for a symbol"
    #{"grim"}
    (fn [{:keys [args] :as com-m}]
-     (let [sym      (first args)
+     (let [sym                   (first args)
            [_ platform ns key s] (re-matches #"((.+)::(.+))/(.+)" sym)]
        (->> (if (and platform ns s)
               (if-let [ns (get @def-index key)]
@@ -50,4 +50,4 @@
                            (count @def-index)))
                (catch Exception e
                  (str "Reload failed!" (.getMessage e))))
-          (send message com-m)))))
+          (send-message com-m)))))
